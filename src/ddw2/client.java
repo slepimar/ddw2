@@ -13,10 +13,12 @@ import gate.Node;
 import gate.ProcessingResource;
 import gate.creole.SerialAnalyserController;
 import gate.util.GateException;
+import java.io.Console;
 import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import twitter4j.ResponseList;
@@ -37,7 +39,7 @@ public class client {
     // whether the GATE is initialised
     private static boolean isGateInitilised = false;
     
-    public void run() throws TwitterException{
+    public void run(String user, int tweetsNumber) throws TwitterException{
         
         if(!isGateInitilised){
             
@@ -90,8 +92,11 @@ public class client {
             // create a corpus and add the document
             Corpus corpus = Factory.newCorpus("");
             
-            TwiterAPI twtr = new TwiterAPI();        
-            ResponseList<Status> tweets = twtr.getUserTweets("Walmart", 500);
+            TwiterAPI twtr = new TwiterAPI();
+            
+            
+            
+            ResponseList<Status> tweets = twtr.getUserTweets(user, tweetsNumber);
             for(Status b:tweets){
                 //System.out.println(b.getText());
                 corpus.add(Factory.newDocument(b.getText()));
@@ -104,7 +109,7 @@ public class client {
 
             //run the pipeline
             annotationPipeline.execute();
-
+            int spamNumber=0;
             // loop through the documents in the corpus
             for(int i=0; i< corpus.size(); i++){
 
@@ -117,7 +122,7 @@ public class client {
                 // get all Token annotations
                 AnnotationSet annSetTokens = as_default.get("Spam",futureMap);
                 System.out.println("Number of Spam annotations: " + annSetTokens.size());
-
+                spamNumber+=annSetTokens.size();
                 ArrayList tokenAnnotations = new ArrayList(annSetTokens);
 
                 // looop through the Token annotations
@@ -140,9 +145,21 @@ public class client {
                     //System.out.println("Token: " + value);
                 }
             }
+            if(spamNumber>10){
+                System.out.println("///////////////////////////////////");
+                System.out.println("Result: " + user + " is a !!!!!SPAMMER!!!!!");
+                System.out.println("Spam phrases found: " + spamNumber);
+            }
+            else{
+                System.out.println("///////////////////////////////////");
+                System.out.println("Result: " + user + " isn't a spammer");
+                System.out.println("Spam phrases found: " + spamNumber);
+            }
         } catch (GateException ex) {
             Logger.getLogger(client.class.getName()).log(Level.SEVERE, null, ex);
         }
+        
+        
     }
 
     private void initialiseGate() {
